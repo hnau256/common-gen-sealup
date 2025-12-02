@@ -65,12 +65,12 @@ data object App {
                 wrappedValuePropertyName = "wrappedValueState2"*/
             ),
         ],
-/*        serializable = true,
+        serializable = true,
         ordinal = true,
         name = true,
         fold = true,
         factoryMethods = true,
-        sealedInterfaceName = "AppState",*/
+        /*sealedInterfaceName = "AppState",*/
     )
     internal interface State {
 

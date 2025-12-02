@@ -6,7 +6,7 @@ import arrow.core.right
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
-import com.google.devtools.ksp.symbol.KSTypeParameter
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -23,7 +23,6 @@ import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
 import hnau.common.gen.sealup.processor.sealedinfo.SealedInfo
 import hnau.common.kotlin.foldNullable
-import hnau.common.kotlin.ifNull
 
 fun SealedInfo.generateCode(
     codeGenerator: CodeGenerator,
@@ -68,10 +67,30 @@ private fun SealedInfo.toTypeSpec(
             modifiers += KModifier.SEALED
             visibility?.let { modifiers += it }
             addSuperinterface(parent.toClassName())
+
+            if (serializable) {
+                annotations += AnnotationSpec
+                    .builder(serializableClassName)
+                    .build()
+            }
+
+            if (ordinal) {
+                propertySpecs += PropertySpec
+                    .builder(ordinalPropertyName, intClassName)
+                    .build()
+            }
+
+            if (name) {
+                propertySpecs += PropertySpec
+                    .builder(namePropertyName, stringClassName)
+                    .build()
+            }
+
             addTypes(
-                variants.map { variant ->
+                variants.mapIndexed { index, variant ->
                     variant.toTypeSpec(
-                        overrides = overrides,
+                        index = index,
+                        info = this@toTypeSpec,
                         parent = className,
                     )
                 }
@@ -81,13 +100,50 @@ private fun SealedInfo.toTypeSpec(
 }
 
 private fun SealedInfo.Variant.toTypeSpec(
-    overrides: List<SealedInfo.Override>,
+    index: Int,
+    info: SealedInfo,
     parent: ClassName,
 ): TypeSpec = TypeSpec
     .classBuilder(wrapperClassName)
     .apply {
         modifiers += KModifier.DATA
         addSuperinterface(parent)
+
+        if (info.serializable) {
+            annotations += AnnotationSpec
+                .builder(serializableClassName)
+                .build()
+            annotations += AnnotationSpec
+                .builder(serialNameClassName)
+                .addMember("\"$serialName\"")
+                .build()
+        }
+
+        if (info.ordinal) {
+            propertySpecs += PropertySpec
+                .builder(ordinalPropertyName, intClassName)
+                .addModifiers(KModifier.OVERRIDE)
+                .getter(
+                    FunSpec
+                        .getterBuilder()
+                        .addStatement("return $index")
+                        .build()
+                )
+                .build()
+        }
+
+        if (info.name) {
+            propertySpecs += PropertySpec
+                .builder(namePropertyName, stringClassName)
+                .addModifiers(KModifier.OVERRIDE)
+                .getter(
+                    FunSpec
+                        .getterBuilder()
+                        .addStatement("return \"$identifier\"")
+                        .build()
+                )
+                .build()
+        }
 
         val typeClassName = type.toClassName()
 
@@ -113,21 +169,23 @@ private fun SealedInfo.Variant.toTypeSpec(
             .initializer(wrappedValuePropertyName)
             .build()
 
-        overrides.forEach { override ->
-            override
-                .createSpec(
-                    wrappedValuePropertyName = wrappedValuePropertyName,
-                )
-                .fold(
-                    ifLeft = ::addFunction,
-                    ifRight = ::addProperty,
-                )
-        }
+        info
+            .overrides
+            .forEach { override ->
+                override
+                    .createSpec(
+                        variant = this@toTypeSpec,
+                    )
+                    .fold(
+                        ifLeft = ::addFunction,
+                        ifRight = ::addProperty,
+                    )
+            }
     }
     .build()
 
 private fun SealedInfo.Override.createSpec(
-    wrappedValuePropertyName: String,
+    variant: SealedInfo.Variant,
 ): Either<FunSpec, PropertySpec> {
 
     val typeParamResolver: TypeParameterResolver = typeParameters.toTypeParameterResolver()
@@ -137,14 +195,14 @@ private fun SealedInfo.Override.createSpec(
 
     return when (type) {
         is SealedInfo.Override.Type.Function -> createFunSpec(
-            wrappedValuePropertyName = wrappedValuePropertyName,
+            variant = variant,
             type = type,
             typeParamResolver = typeParamResolver,
             typeVariables = typeVariables,
         ).left()
 
         is SealedInfo.Override.Type.Property -> createPropertySpec(
-            wrappedValuePropertyName = wrappedValuePropertyName,
+            variant = variant,
             type = type,
             typeParamResolver = typeParamResolver,
             typeVariables = typeVariables,
@@ -153,7 +211,7 @@ private fun SealedInfo.Override.createSpec(
 }
 
 private fun SealedInfo.Override.createFunSpec(
-    wrappedValuePropertyName: String,
+    variant: SealedInfo.Variant,
     type: SealedInfo.Override.Type.Function,
     typeParamResolver: TypeParameterResolver,
     typeVariables: List<TypeVariableName>
@@ -181,10 +239,10 @@ private fun SealedInfo.Override.createFunSpec(
         addStatement(
             receiver.foldNullable(
                 ifNull = {
-                    "return $wrappedValuePropertyName.$name(" to ")"
+                    "return ${variant.wrappedValuePropertyName}.$name(" to ")"
                 },
                 ifNotNull = {
-                    "return with($wrappedValuePropertyName) { $name(" to ") }"
+                    "return with(${variant.wrappedValuePropertyName}) { $name(" to ") }"
                 }
             ).let { (prefix, postfix) ->
                 type.arguments.joinToString(
@@ -198,7 +256,7 @@ private fun SealedInfo.Override.createFunSpec(
     .build()
 
 private fun SealedInfo.Override.createPropertySpec(
-    wrappedValuePropertyName: String,
+    variant: SealedInfo.Variant,
     type: SealedInfo.Override.Type.Property,
     typeParamResolver: TypeParameterResolver,
     typeVariables: List<TypeVariableName>,
@@ -224,8 +282,8 @@ private fun SealedInfo.Override.createPropertySpec(
                     .getterBuilder()
                     .addStatement(
                         receiver.foldNullable(
-                            ifNull = { "return $wrappedValuePropertyName.$name" },
-                            ifNotNull = { "return with($wrappedValuePropertyName) { $name }" }
+                            ifNull = { "return ${variant.wrappedValuePropertyName}.$name" },
+                            ifNotNull = { "return with(${variant.wrappedValuePropertyName}) { $name }" }
                         )
                     )
                     .build()
@@ -238,8 +296,8 @@ private fun SealedInfo.Override.createPropertySpec(
                         .addParameter("newValue", typeName)
                         .addStatement(
                             receiver.foldNullable(
-                                ifNull = { "$wrappedValuePropertyName.$name = newValue" },
-                                ifNotNull = { "with($wrappedValuePropertyName) { $name = newValue }" }
+                                ifNull = { "${variant.wrappedValuePropertyName}.$name = $setterParameterName" },
+                                ifNotNull = { "with(${variant.wrappedValuePropertyName}) { $name = $setterParameterName }" }
                             )
                         )
                         .build()
@@ -249,3 +307,16 @@ private fun SealedInfo.Override.createPropertySpec(
         }
         .build()
 }
+
+private val serializableClassName = ClassName("kotlinx.serialization", "Serializable")
+private val serialNameClassName = ClassName("kotlinx.serialization", "SerialName")
+
+private val intClassName = ClassName("kotlin", "Int")
+
+private val stringClassName = ClassName("kotlin", "String")
+
+private const val setterParameterName = "newValue"
+
+private const val ordinalPropertyName = "ordinal"
+
+private const val namePropertyName = "name"
