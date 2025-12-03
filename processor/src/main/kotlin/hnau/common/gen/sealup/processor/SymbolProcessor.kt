@@ -6,7 +6,7 @@ import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.symbol.KSAnnotated
 import hnau.common.gen.sealup.processor.sealedinfo.SealedInfo
-import hnau.common.gen.sealup.processor.sealedinfo.build.create
+import hnau.common.gen.sealup.processor.sealedinfo.create.create
 import hnau.common.gen.sealup.processor.sealedinfo.generator.generateCode
 
 class SymbolProcessor(

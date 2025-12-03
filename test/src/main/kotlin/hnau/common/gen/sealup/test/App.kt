@@ -25,6 +25,12 @@ data class State1(
         set(value) {}
 }
 
+
+@Retention(AnnotationRetention.SOURCE)
+annotation class TestAnnotation(
+    val value: String,
+)
+
 @Serializable
 data class State2(
     val flag: Boolean,
@@ -76,6 +82,7 @@ data object App {
 
         fun foo1()
 
+        @TestAnnotation("abc")
         fun String.foo2(): String
 
         fun <T, S> foo3(iE: T, sF: S): T where T: Number, T: Comparable<T>

@@ -1,6 +1,7 @@
 package hnau.common.gen.sealup.processor.sealedinfo
 
 import arrow.core.NonEmptyList
+import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeParameter
@@ -36,6 +37,7 @@ data class SealedInfo(
         val visibility: Visibility,
         val receiver: KSType?,
         val typeParameters: List<KSTypeParameter>,
+        val annotations: List<KSAnnotation>,
     ) {
 
         sealed interface Type {

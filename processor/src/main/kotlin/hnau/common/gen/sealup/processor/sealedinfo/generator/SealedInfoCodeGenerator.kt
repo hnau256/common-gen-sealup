@@ -6,6 +6,7 @@ import arrow.core.right
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
+import com.google.devtools.ksp.symbol.KSAnnotation
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -16,6 +17,7 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.ksp.TypeParameterResolver
+import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toKModifier
 import com.squareup.kotlinpoet.ksp.toTypeName
@@ -221,6 +223,7 @@ private fun SealedInfo.Override.createFunSpec(
         modifiers += KModifier.OVERRIDE
         visibility.toKModifier()?.let { modifiers += it }
         this.typeVariables.addAll(typeVariables)
+        annotations.addAll(this@createFunSpec.annotations.map(KSAnnotation::toAnnotationSpec))
         returns(result.toTypeName(typeParamResolver))
 
         receiver
@@ -271,6 +274,7 @@ private fun SealedInfo.Override.createPropertySpec(
             modifiers += KModifier.OVERRIDE
             visibility.toKModifier()?.let { modifiers += it }
             this.typeVariables.addAll(typeVariables)
+            annotations.addAll(this@createPropertySpec.annotations.map(KSAnnotation::toAnnotationSpec))
             mutable(type.mutable)
 
             receiver
