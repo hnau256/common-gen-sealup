@@ -1,4 +1,4 @@
-package hnau.common.gen.sealup.processor.sealedinfo.generator
+package hnau.common.gen.sealup.processor.sealedinfo.generator.utils
 
 import com.squareup.kotlinpoet.ClassName
 

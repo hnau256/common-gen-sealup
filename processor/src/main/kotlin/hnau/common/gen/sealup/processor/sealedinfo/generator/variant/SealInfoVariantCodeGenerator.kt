@@ -1,0 +1,107 @@
+package hnau.common.gen.sealup.processor.sealedinfo.generator.variant
+
+import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.ksp.toClassName
+import hnau.common.gen.sealup.processor.sealedinfo.SealedInfo
+import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.SealInfoCodeGeneratorConstants
+import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.className
+import hnau.common.gen.sealup.processor.sealedinfo.generator.variant.override.createSpec
+import kotlin.collections.plusAssign
+
+fun SealedInfo.Variant.toTypeSpec(
+    index: Int,
+    info: SealedInfo,
+): TypeSpec = TypeSpec
+    .classBuilder(wrapperClassName)
+    .apply {
+        modifiers += KModifier.DATA
+        addSuperinterface(info.className)
+
+        if (info.serializable) {
+            annotations plusAssign AnnotationSpec.Companion
+                .builder(SealInfoCodeGeneratorConstants.serializableClassName)
+                .build()
+            annotations plusAssign AnnotationSpec.Companion
+                .builder(SealInfoCodeGeneratorConstants.serialNameClassName)
+                .addMember("\"$serialName\"")
+                .build()
+        }
+
+        if (info.ordinal) {
+            propertySpecs plusAssign PropertySpec.Companion
+                .builder(
+                    SealInfoCodeGeneratorConstants.ordinalPropertyName,
+                    SealInfoCodeGeneratorConstants.intClassName,
+                )
+                .addModifiers(KModifier.OVERRIDE)
+                .getter(
+                    FunSpec
+                        .getterBuilder()
+                        .addStatement("return $index")
+                        .build()
+                )
+                .build()
+        }
+
+        if (info.name) {
+            propertySpecs plusAssign PropertySpec.Companion
+                .builder(
+                    SealInfoCodeGeneratorConstants.namePropertyName,
+                    SealInfoCodeGeneratorConstants.stringClassName,
+                )
+                .addModifiers(KModifier.OVERRIDE)
+                .getter(
+                    FunSpec
+                        .getterBuilder()
+                        .addStatement("return \"$identifier\"")
+                        .build()
+                )
+                .build()
+        }
+
+        val typeClassName = type.toClassName()
+
+        primaryConstructor(
+            FunSpec
+                .constructorBuilder()
+                .addParameter(
+                    ParameterSpec
+                        .builder(
+                            name = wrappedValuePropertyName,
+                            type = typeClassName,
+                        )
+                        .build()
+                )
+                .build()
+        )
+
+        propertySpecs += PropertySpec
+            .builder(
+                name = wrappedValuePropertyName,
+                type = typeClassName,
+            )
+            .initializer(wrappedValuePropertyName)
+            .build()
+
+        info
+            .overrides
+            .forEach { override ->
+                override
+                    .createSpec(
+                        variant = this@toTypeSpec,
+                    )
+                    .fold(
+                        ifLeft = ::addFunction,
+                        ifRight = ::addProperty,
+                    )
+            }
+    }
+    .build()
+
+
+

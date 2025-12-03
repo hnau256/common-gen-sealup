@@ -85,10 +85,7 @@ fun SealedInfo.Override.Companion.create(
                     },
                 annotations = function
                     .annotations
-                    .toList()
-                    .also {
-                        logger.info("Annotations: $it")
-                    },
+                    .toList(),
             )
         }
     )

@@ -1,31 +1,26 @@
 package hnau.common.gen.sealup.processor.sealedinfo.generator
 
-import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
 import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.ksp.toKModifier
 import hnau.common.gen.sealup.processor.sealedinfo.SealedInfo
+import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.packageName
 
 fun SealedInfo.generateCode(
     codeGenerator: CodeGenerator,
 ) {
-    val packageName = parent.packageName.asString()
 
     val file = FileSpec
         .builder(packageName, sealedInterfaceName)
         .apply {
             addType(
-                toTypeSpec(
-                    packageName = packageName,
-                    visibility = parent.getVisibility().toKModifier(),
-                )
+                toTypeSpec()
             )
-            if (fold) {
+            /*if (fold) {
                 addFunction(
                     toFoldFuncSpec()
                 )
-            }
+            }*/
         }
         .build()
 
@@ -33,7 +28,16 @@ fun SealedInfo.generateCode(
         .createNewFile(
             dependencies = Dependencies(
                 aggregating = false,
-                sources = listOfNotNull(parent.containingFile).toTypedArray(),
+                sources = buildList {
+                    add(parent.containingFile)
+                    addAll(
+                        variants.map { variant ->
+                            variant.type.declaration.containingFile
+                        }
+                    )
+                }
+                    .filterNotNull()
+                    .toTypedArray(),
             ),
             packageName = packageName,
             fileName = sealedInterfaceName,

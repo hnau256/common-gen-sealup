@@ -9,9 +9,7 @@ import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.ksp.toKModifier
 import hnau.common.gen.sealup.processor.sealedinfo.SealedInfo
 
-fun SealedInfo.toFoldFuncSpec(
-    selaedClassName: ClassName,
-): FunSpec = FunSpec
+fun SealedInfo.toFoldFuncSpec(): FunSpec = FunSpec
     .builder("fold")
     .apply {
 
