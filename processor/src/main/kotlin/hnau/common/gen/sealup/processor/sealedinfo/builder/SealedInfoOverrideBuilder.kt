@@ -1,4 +1,4 @@
-package hnau.common.gen.sealup.processor.sealedinfo.create
+package hnau.common.gen.sealup.processor.sealedinfo.builder
 
 import arrow.core.Either
 import arrow.core.identity

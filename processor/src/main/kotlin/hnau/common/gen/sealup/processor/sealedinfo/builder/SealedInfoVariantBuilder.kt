@@ -1,4 +1,4 @@
-package hnau.common.gen.sealup.processor.sealedinfo.create
+package hnau.common.gen.sealup.processor.sealedinfo.builder
 
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.symbol.KSAnnotation
