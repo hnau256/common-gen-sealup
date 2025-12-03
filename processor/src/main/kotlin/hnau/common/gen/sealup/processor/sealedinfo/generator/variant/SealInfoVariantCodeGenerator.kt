@@ -11,7 +11,6 @@ import hnau.common.gen.sealup.processor.sealedinfo.SealedInfo
 import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.SealInfoCodeGeneratorConstants
 import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.className
 import hnau.common.gen.sealup.processor.sealedinfo.generator.variant.override.createSpec
-import kotlin.collections.plusAssign
 
 fun SealedInfo.Variant.toTypeSpec(
     index: Int,
@@ -23,17 +22,17 @@ fun SealedInfo.Variant.toTypeSpec(
         addSuperinterface(info.className)
 
         if (info.serializable) {
-            annotations plusAssign AnnotationSpec.Companion
+            annotations += AnnotationSpec
                 .builder(SealInfoCodeGeneratorConstants.serializableClassName)
                 .build()
-            annotations plusAssign AnnotationSpec.Companion
+            annotations += AnnotationSpec
                 .builder(SealInfoCodeGeneratorConstants.serialNameClassName)
                 .addMember("\"$serialName\"")
                 .build()
         }
 
         if (info.ordinal) {
-            propertySpecs plusAssign PropertySpec.Companion
+            propertySpecs += PropertySpec
                 .builder(
                     SealInfoCodeGeneratorConstants.ordinalPropertyName,
                     SealInfoCodeGeneratorConstants.intClassName,
@@ -49,7 +48,7 @@ fun SealedInfo.Variant.toTypeSpec(
         }
 
         if (info.name) {
-            propertySpecs plusAssign PropertySpec.Companion
+            propertySpecs += PropertySpec
                 .builder(
                     SealInfoCodeGeneratorConstants.namePropertyName,
                     SealInfoCodeGeneratorConstants.stringClassName,
