@@ -21,6 +21,11 @@ fun SealedInfo.generateCode(
                     visibility = parent.getVisibility().toKModifier(),
                 )
             )
+            if (fold) {
+                addFunction(
+                    toFoldFuncSpec()
+                )
+            }
         }
         .build()
 
