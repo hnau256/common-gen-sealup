@@ -21,6 +21,13 @@ fun SealedInfo.generateCode(
                     toFoldFuncSpec()
                 )
             }
+            factoryMethods?.let { parentExtension ->
+                toFactoriesFuncsSpec(
+                    parentExtension = parentExtension,
+                ).forEach { factoryMethod ->
+                    addFunction(factoryMethod)
+                }
+            }
         }
         .build()
 

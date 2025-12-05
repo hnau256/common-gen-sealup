@@ -2,12 +2,15 @@ package hnau.common.gen.sealup.test
 
 import hnau.common.gen.sealup.annotations.SealUp
 import hnau.common.gen.sealup.annotations.Variant
+import hnau.common.gen.sealup.test.State1
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class State1(
     val count: Int,
 ) {
+
+    constructor(): this(count = 1)
 
     fun foo1() {}
 
@@ -36,6 +39,10 @@ data class State2(
     val flag: Boolean,
 ) {
 
+    constructor(): this(flag = true)
+
+    constructor(int: Int): this(flag = int != 0)
+
     fun foo1() {}
 
     fun String.foo2(): String = flag.toString()
@@ -58,17 +65,17 @@ data object App {
         variants = [
             Variant(
                 type = State1::class,
-/*                wrapperClassName = "State1W",
+                wrapperClassName = "State1W",
                 identifier = "s1",
                 serialName = "state_1",
-                wrappedValuePropertyName = "wrappedValueState1"*/
+                wrappedValuePropertyName = "wrappedValueState1"
             ),
             Variant(
                 type = State2::class,
-/*                wrapperClassName = "State2Wrap",
+                wrapperClassName = "State2Wrap",
                 identifier = "sss1",
                 serialName = "state_second",
-                wrappedValuePropertyName = "wrappedValueState2"*/
+                wrappedValuePropertyName = "wrappedValueState2"
             ),
         ],
         serializable = true,
@@ -76,7 +83,7 @@ data object App {
         name = true,
         fold = true,
         factoryMethods = true,
-        /*sealedInterfaceName = "AppState",*/
+        sealedInterfaceName = "AppState",
     )
     internal interface State {
 
