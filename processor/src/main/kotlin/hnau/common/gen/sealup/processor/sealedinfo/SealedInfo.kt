@@ -29,7 +29,18 @@ data class SealedInfo(
         val identifier: String,
         val serialName: String,
         val wrappedValuePropertyName: String,
+        val constructors: List<Constructor>,
     ) {
+
+        data class Constructor(
+            val parameters: List<Parameter>,
+        ) {
+
+            data class Parameter(
+                val name: String?,
+                val type: KSType,
+            )
+        }
 
         companion object
     }

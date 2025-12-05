@@ -14,6 +14,7 @@ import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.wrappedClassN
 import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.wrapperClassName
 import hnau.common.kotlin.castOrThrow
 import hnau.common.kotlin.foldBoolean
+import hnau.common.kotlin.ifTrue
 
 fun SealedInfo.toFactoriesFuncsSpec(
     parentExtension: SealedInfo.ParentExtension,
@@ -40,10 +41,7 @@ private fun SealedInfo.Variant.toFactoriesFuncsSpec(
             )
         )
         addAll(
-            wrappedType
-                .declaration
-                .castOrThrow<KSClassDeclaration>()
-                .getConstructors()
+            constructors
                 .map { constructor ->
                     toConstructorFactoryFuncSpec(
                         info = info,
@@ -83,12 +81,13 @@ private fun SealedInfo.Variant.toConstructorFactoryFuncSpec(
     info: SealedInfo,
     parentExtension: SealedInfo.ParentExtension,
     wrapperClassName: ClassName,
-    constructor: KSFunctionDeclaration,
+    constructor: SealedInfo.Variant.Constructor,
 ): FunSpec {
-    val parameters = constructor.parameters.map {
-        it.name?.asString() to it.type.resolve()
-    }
-    val allParametersHasNames = parameters.all { (name) -> name != null }
+
+    val allParametersHasNames = constructor
+        .parameters
+        .all { (name) -> name != null }
+
     return FunSpec
         .builder(identifier)
         .apply {
@@ -97,13 +96,15 @@ private fun SealedInfo.Variant.toConstructorFactoryFuncSpec(
             receiver(parentExtension.companionClassName)
             returns(wrapperClassName)
 
-            parameters.forEachIndexed { index, (nameOrNull, type) ->
-                val name = nameOrNull ?: "parameter$index"
-                addParameter(
-                    name,
-                    type.toClassName(),
-                )
-            }
+            constructor
+                .parameters
+                .forEachIndexed { index, (nameOrNull, type) ->
+                    val name = nameOrNull ?: "parameter$index"
+                    addParameter(
+                        name,
+                        type.toClassName(),
+                    )
+                }
 
         }
         .addCode(
@@ -111,7 +112,8 @@ private fun SealedInfo.Variant.toConstructorFactoryFuncSpec(
                 "return $identifier(\n\t$identifier = %T(",
                 ")\n)",
             ).let { (prefix, postfix) ->
-                parameters
+                constructor
+                    .parameters
                     .toNonEmptyListOrNull()
                     ?.withIndex()
                     ?.joinToString(
@@ -121,10 +123,7 @@ private fun SealedInfo.Variant.toConstructorFactoryFuncSpec(
                     ) { (index, nameWithType) ->
                         val (nameOrNull) = nameWithType
                         val name = nameOrNull ?: "parameter$index"
-                        val prefix = allParametersHasNames.foldBoolean(
-                            ifTrue = { "$name = " },
-                            ifFalse = { "" },
-                        )
+                        val prefix = allParametersHasNames.ifTrue { "$name = " }.orEmpty()
                         "\t\t$prefix$name,"
                     }
                     ?: "$prefix$postfix"
