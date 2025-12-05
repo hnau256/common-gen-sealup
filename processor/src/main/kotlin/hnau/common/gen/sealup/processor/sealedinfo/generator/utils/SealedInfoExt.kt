@@ -18,3 +18,23 @@ val SealedInfo.visibility: KModifier?
 
 val SealedInfo.parentClassName: ClassName
     get() = parent.toClassName()
+
+val SealedInfo.ParentExtension.companionClassName: ClassName
+    get() = companion.toClassName()
+
+val SealedInfo.Variant.wrappedClassName: ClassName
+    get() = wrappedType.toClassName()
+
+fun SealedInfo.Variant.wrapperClassName(
+    sealedInfo: SealedInfo,
+): ClassName = sealedInfo
+    .className
+    .let { sealedClassName ->
+        ClassName(
+            packageName = sealedClassName.packageName,
+            simpleNames = sealedClassName.simpleNames + wrapperClass,
+        )
+    }
+
+val SealedInfo.Variant.uppercasedIdentifier: String
+    get() = identifier.replaceFirstChar(Char::uppercase)

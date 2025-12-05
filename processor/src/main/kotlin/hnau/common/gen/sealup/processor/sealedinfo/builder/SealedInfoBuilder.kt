@@ -15,6 +15,8 @@ import hnau.common.gen.kt.nameWithoutPackage
 import hnau.common.gen.sealup.processor.AnnotationInfo
 import hnau.common.gen.sealup.processor.sealedinfo.SealedInfo
 import hnau.common.kotlin.ifNull
+import hnau.common.kotlin.ifTrue
+import hnau.common.kotlin.lazy.Initializer
 
 fun SealedInfo.Companion.create(
     logger: KSPLogger,
@@ -104,6 +106,27 @@ fun SealedInfo.Companion.create(
                 .plus("Sealed")
         }
 
+    val parentExtension = Initializer<SealedInfo.ParentExtension?>()
+
+    val getParentExtension: (
+        target: String,
+    ) -> SealedInfo.ParentExtension? = { target ->
+        parentExtension {
+            classDeclaration
+                .declarations
+                .filterIsInstance<KSClassDeclaration>()
+                .firstOrNull { it.isCompanionObject }
+                .ifNull {
+                    logger.error(
+                        "Companion object of sealing up interface is expected for generating $target",
+                        classDeclaration
+                    )
+                    null
+                }
+                ?.let(SealedInfo::ParentExtension)
+        }
+    }
+
     return SealedInfo(
         parent = classDeclaration,
         variants = variants,
@@ -112,7 +135,10 @@ fun SealedInfo.Companion.create(
         name = arguments.get<Boolean>("name") ?: return null,
         sealedInterfaceName = sealedInterfaceName,
         fold = arguments.get<Boolean>("fold") ?: return null,
-        factoryMethods = arguments.get<Boolean>("serializable") ?: return null,
+        factoryMethods = arguments
+            .get<Boolean>("factoryMethods")
+            .ifNull { return null }
+            .ifTrue { getParentExtension("factory methods") ?: return null },
         overrides = overrides,
     )
 }

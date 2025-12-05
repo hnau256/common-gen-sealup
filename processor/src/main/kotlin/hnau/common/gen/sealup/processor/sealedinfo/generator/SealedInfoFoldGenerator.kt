@@ -1,55 +1,50 @@
 package hnau.common.gen.sealup.processor.sealedinfo.generator
 
-import com.google.devtools.ksp.getVisibility
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.TypeVariableName
-import com.squareup.kotlinpoet.ksp.toKModifier
 import hnau.common.gen.sealup.processor.sealedinfo.SealedInfo
+import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.className
+import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.uppercasedIdentifier
+import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.visibility
+import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.wrappedClassName
+import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.wrapperClassName
 
-fun SealedInfo.toFoldFuncSpec(): FunSpec = FunSpec
-    .builder("fold")
-    .apply {
+fun SealedInfo.toFoldFuncSpec(): FunSpec {
+    val resultType = TypeVariableName("R")
+    return FunSpec
+        .builder("fold")
+        .apply {
+            modifiers += KModifier.INLINE
+            visibility?.let { modifiers += it }
 
-        parent
-            .getVisibility()
-            .toKModifier()
-            ?.let { visibility -> modifiers += visibility }
+            typeVariables += resultType
 
-        modifiers += KModifier.INLINE
+            receiver(className)
+            returns(resultType)
 
-        val resultType = TypeVariableName("R")
-
-        typeVariables += resultType
-    }
-    .addModifiers(KModifier.INTERNAL, KModifier.INLINE)
-    .addTypeVariable(TypeVariableName("R"))
-    .receiver(ClassName("your.pkg", "AppStateSealedTest"))
-    .returns(TypeVariableName("R"))
-    .addParameter(
-        "ifState1",
-        LambdaTypeName.get(
-            parameters = listOf(ClassName("your.pkg", "State1")).toTypedArray(),
-            returnType = TypeVariableName("R")
-        )
-    )
-    .addParameter(
-        "ifState2",
-        LambdaTypeName.get(
-            parameters = listOf(ClassName("your.pkg", "State2")).toTypedArray(),
-            returnType = TypeVariableName("R")
-        )
-    )
-    .addCode(
-        """
-        return when (this) {
-            is %T.State1Wrapper -> ifState1(value)
-            is %T.State2Wrapper -> ifState2(value)
+            variants.forEach { variant ->
+                addParameter(
+                    "if${variant.uppercasedIdentifier}",
+                    LambdaTypeName.get(
+                        parameters = listOf(variant.wrappedClassName).toTypedArray(),
+                        returnType = resultType
+                    )
+                )
+            }
         }
-        """.trimIndent(),
-        ClassName("your.pkg", "AppStateSealedTest"),
-        ClassName("your.pkg", "AppStateSealedTest")
-    )
-    .build()
+        .addCode(
+            variants.joinToString(
+                prefix = "return when (this) {\n",
+                postfix = "\n\t}",
+                separator = "\n",
+            ) { variant ->
+                "\t\tis %T -> if${variant.uppercasedIdentifier}(${variant.wrappedValuePropertyName})"
+            },
+            args = variants
+                .map { it.wrapperClassName(this@toFoldFuncSpec) }
+                .toTypedArray(),
+        )
+        .build()
+}

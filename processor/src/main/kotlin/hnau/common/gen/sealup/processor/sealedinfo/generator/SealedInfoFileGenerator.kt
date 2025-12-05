@@ -16,11 +16,11 @@ fun SealedInfo.generateCode(
             addType(
                 toTypeSpec()
             )
-            /*if (fold) {
+            if (fold) {
                 addFunction(
                     toFoldFuncSpec()
                 )
-            }*/
+            }
         }
         .build()
 
@@ -32,7 +32,7 @@ fun SealedInfo.generateCode(
                     add(parent.containingFile)
                     addAll(
                         variants.map { variant ->
-                            variant.type.declaration.containingFile
+                            variant.wrappedType.declaration.containingFile
                         }
                     )
                 }

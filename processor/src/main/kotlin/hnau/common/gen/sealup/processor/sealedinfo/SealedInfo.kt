@@ -15,13 +15,17 @@ data class SealedInfo(
     val name: Boolean,
     val sealedInterfaceName: String,
     val fold: Boolean,
-    val factoryMethods: Boolean,
+    val factoryMethods: ParentExtension?,
     val overrides: List<Override>,
 ) {
 
+    data class ParentExtension(
+        val companion: KSClassDeclaration,
+    )
+
     data class Variant(
-        val type: KSType,
-        val wrapperClassName: String,
+        val wrappedType: KSType,
+        val wrapperClass: String,
         val identifier: String,
         val serialName: String,
         val wrappedValuePropertyName: String,

@@ -6,17 +6,17 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.ksp.toClassName
 import hnau.common.gen.sealup.processor.sealedinfo.SealedInfo
 import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.SealInfoCodeGeneratorConstants
 import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.className
+import hnau.common.gen.sealup.processor.sealedinfo.generator.utils.wrappedClassName
 import hnau.common.gen.sealup.processor.sealedinfo.generator.variant.override.createSpec
 
 fun SealedInfo.Variant.toTypeSpec(
     index: Int,
     info: SealedInfo,
 ): TypeSpec = TypeSpec
-    .classBuilder(wrapperClassName)
+    .classBuilder(wrapperClass)
     .apply {
         modifiers += KModifier.DATA
         addSuperinterface(info.className)
@@ -63,8 +63,6 @@ fun SealedInfo.Variant.toTypeSpec(
                 .build()
         }
 
-        val typeClassName = type.toClassName()
-
         primaryConstructor(
             FunSpec
                 .constructorBuilder()
@@ -72,7 +70,7 @@ fun SealedInfo.Variant.toTypeSpec(
                     ParameterSpec
                         .builder(
                             name = wrappedValuePropertyName,
-                            type = typeClassName,
+                            type = wrappedClassName,
                         )
                         .build()
                 )
@@ -82,7 +80,7 @@ fun SealedInfo.Variant.toTypeSpec(
         propertySpecs += PropertySpec
             .builder(
                 name = wrappedValuePropertyName,
-                type = typeClassName,
+                type = wrappedClassName,
             )
             .initializer(wrappedValuePropertyName)
             .build()

@@ -33,8 +33,8 @@ fun SealedInfo.Variant.Companion.create(
         .ifNull { stickedName.replaceFirstChar(Char::lowercase) }
 
     return SealedInfo.Variant(
-        type = type,
-        wrapperClassName = arguments
+        wrappedType = type,
+        wrapperClass = arguments
             .get<String>("wrapperClassName")
             .ifNull { return null }
             .takeIf(String::isNotEmpty)
